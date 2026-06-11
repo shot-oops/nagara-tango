@@ -1,25 +1,51 @@
 {
   "expo": {
-    "name": "reminds_me",
-    "slug": "reminds_me",
+    "name": "ながら単語 for TOEIC",
+    "slug": "nagara-tango-toeic",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "icon": "./assets/images/icon.png",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.remindsme.app",
+      "deploymentTarget": "15.1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.remindsme.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "./plugins/withoutPushEntitlement.js",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "revenuecatIosKey": "",
+      "revenuecatAndroidKey": "",
+      "supabaseUrl": "https://thdepqtbzeraxbxagnke.supabase.co/rest/v1/",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZGVwcXRiemVyYXhieGFnbmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MjA0OTksImV4cCI6MjA5NTE5NjQ5OX0.2ey3nrhh7VWmDU0HRGc0ru2A_e0LhtbmEYilxSqr6l0",
+      "eas": {
+        "projectId": "ed81ae9c-bbb1-4b4b-bdb0-c0531a8a4e48"
+      }
     }
   }
 }
