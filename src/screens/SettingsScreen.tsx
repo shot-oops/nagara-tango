@@ -1,15 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { Button } from '../components/Button';
 import { NotificationBlocksEditor } from '../components/NotificationBlocksEditor';
+import { LockSlider } from '../components/LockSlider';
 import { LegalModal, type LegalWhich } from '../components/LegalModal';
 import { COLORS, FONT_SIZE, RADIUS, SPACING } from '../constants/colors';
 import { useApp } from '../context/AppContext';
@@ -18,16 +12,13 @@ import { getVocabTestResult, setVocabLevel } from '../lib/storage';
 import { TOEIC_LEVEL_LABEL } from '../types';
 import type { NotificationBlock, VocabLevel } from '../types';
 
-const INTERVAL_OPTIONS = [5, 10, 15, 20, 30, 60];
-const FREE_INTERVALS = [30, 60];
 const LEVEL_OPTIONS: VocabLevel[] = [2, 3, 4, 5];
-const DAILY_OPTIONS: { value: number; label: string }[] = [
-  { value: 5, label: '1歩ずつ' },
-  { value: 10, label: '標準' },
-  { value: 20, label: '本気' },
-  { value: 30, label: '全力' },
-];
-const FREE_DAILY_VALUES = [5, 10];
+const MIN_INTERVAL = 5;
+const MAX_INTERVAL = 60;
+const FREE_MIN_INTERVAL = 30; // free: 30〜60分（30分未満は有料）
+const MIN_DAILY = 5;
+const MAX_DAILY = 30;
+const FREE_MAX_DAILY = 10; // free: 5〜10語（11語以上は有料）
 
 interface Props {
   onClose: () => void;
@@ -58,6 +49,12 @@ export function SettingsScreen({ onClose }: Props) {
 
   const isFree = !isPremium;
 
+  // Free users are limited to ≥30 min and ≤10 words; premium unlocks the rest.
+  const intAllowedMin = isPremium ? MIN_INTERVAL : FREE_MIN_INTERVAL;
+  const dayAllowedMax = isPremium ? MAX_DAILY : FREE_MAX_DAILY;
+  const dispInterval = Math.max(intAllowedMin, Math.min(MAX_INTERVAL, interval));
+  const dispDaily = Math.max(MIN_DAILY, Math.min(dayAllowedMax, daily));
+
   useEffect(() => {
     getVocabTestResult()
       .then((r) => setLevel(r?.level ?? null))
@@ -68,9 +65,9 @@ export function SettingsScreen({ onClose }: Props) {
     if (!updateProfile) return;
     setSaving(true);
     await updateProfile({
-      notification_interval_min: interval,
+      notification_interval_min: dispInterval,
       notification_blocks: blocks,
-      daily_new_words: daily,
+      daily_new_words: dispDaily,
     }).catch((e) => console.warn('[settings] save failed', e));
     setSaving(false);
     onClose();
@@ -104,56 +101,35 @@ export function SettingsScreen({ onClose }: Props) {
         <View style={{ width: 64 }} />
       </View>
 
-      <Text style={styles.sectionTitle}>通知間隔</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
-      >
-        {INTERVAL_OPTIONS.map((m) => {
-          const showLock = isFree && !FREE_INTERVALS.includes(m);
-          const locked = showLock;
-          const selected = interval === m;
-          return (
-            <Pressable
-              key={m}
-              disabled={locked}
-              onPress={() => setInterval(m)}
-              style={[
-                styles.chip,
-                selected && styles.chipOn,
-                locked && styles.chipLocked,
-              ]}
-            >
-              <Text style={[styles.chipText, selected && styles.chipTextOn]}>
-                {m}分
-              </Text>
-              {showLock && <Text style={styles.lockText}>🔒</Text>}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.sliderHead}>
+        <Text style={styles.sectionTitle}>通知間隔</Text>
+        <Text style={styles.sliderValue}>{dispInterval}分ごと</Text>
+      </View>
+      <LockSlider
+        min={MIN_INTERVAL}
+        max={MAX_INTERVAL}
+        step={1}
+        value={dispInterval}
+        onChange={setInterval}
+        allowedMin={intAllowedMin}
+        allowedMax={MAX_INTERVAL}
+      />
+      {isFree && <Text style={styles.hint}>🔒 30分未満は有料プランで解放（無料は30〜60分）</Text>}
 
-      <Text style={styles.sectionTitle}>1日の新規単語数</Text>
-      {DAILY_OPTIONS.map((d) => {
-        const showLock = isFree && !FREE_DAILY_VALUES.includes(d.value);
-        const locked = showLock;
-        const on = daily === d.value;
-        return (
-          <Pressable
-            key={d.value}
-            disabled={locked}
-            onPress={() => setDaily(d.value)}
-            style={[styles.dailyRow, on && styles.dailyRowOn, locked && styles.chipLocked]}
-          >
-            <Text style={[styles.dailyLabel, on && styles.dailyLabelOn]}>{d.label}</Text>
-            <View style={styles.dailyRight}>
-              <Text style={[styles.dailyValue, on && styles.dailyValueOn]}>{d.value}語</Text>
-              {showLock && <Text style={styles.lockText}>🔒</Text>}
-            </View>
-          </Pressable>
-        );
-      })}
+      <View style={styles.sliderHead}>
+        <Text style={styles.sectionTitle}>1日の新規単語数</Text>
+        <Text style={styles.sliderValue}>{dispDaily}語</Text>
+      </View>
+      <LockSlider
+        min={MIN_DAILY}
+        max={MAX_DAILY}
+        step={1}
+        value={dispDaily}
+        onChange={setDaily}
+        allowedMin={MIN_DAILY}
+        allowedMax={dayAllowedMax}
+      />
+      {isFree && <Text style={styles.hint}>🔒 11語以上は有料プランで解放（無料は5〜10語）</Text>}
 
       <Text style={styles.sectionTitle}>通知しない時間帯</Text>
       <NotificationBlocksEditor blocks={blocks} onChange={setBlocks} />
@@ -326,6 +302,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
   },
+  sliderHead: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  sliderValue: {
+    color: COLORS.primary,
+    fontWeight: '800',
+    fontSize: FONT_SIZE.lg,
+    marginBottom: SPACING.sm,
+  },
+  sliderEnds: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  endLabel: { color: COLORS.textMuted, fontSize: FONT_SIZE.xs },
   chipRow: { flexDirection: 'row', gap: SPACING.sm, paddingVertical: SPACING.xs },
   chip: {
     paddingHorizontal: SPACING.md,

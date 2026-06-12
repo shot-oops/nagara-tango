@@ -6,8 +6,9 @@ import Purchases, {
   type PurchasesPackage,
 } from 'react-native-purchases';
 
-/** Entitlement that unlocks all paid features. */
-export const ENTITLEMENT_ID = 'premium';
+/** Entitlement that unlocks all paid features (must match the RevenueCat
+ * dashboard Entitlement identifier exactly). */
+export const ENTITLEMENT_ID = 'ながら単語 for TOEIC Premium';
 
 /** Placeholder product IDs (register the real ones in App Store Connect). */
 export const PRODUCT_MONTHLY = 'nagaratango_monthly_490';
@@ -77,7 +78,7 @@ export async function setDevPremium(on: boolean): Promise<void> {
   }
 }
 
-/** True when the user has the `premium` entitlement (or the dev override is on). */
+/** True when the user has the premium entitlement (or the dev override is on). */
 export async function isPremium(): Promise<boolean> {
   if (await getDevPremium()) return true;
   if (!configured) return false;
