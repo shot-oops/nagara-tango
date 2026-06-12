@@ -14,6 +14,7 @@ const KEY_VOCAB_RESULT = '@reminds_me/vocab_test_result/v1';
 const KEY_SUPPLEMENT = '@reminds_me/supplement_log/v1';
 const KEY_PENDING_SHOWS = '@reminds_me/pending_shows/v1';
 const KEY_SLIDES_SEEN = '@reminds_me/onboarding_slides_seen/v1';
+const KEY_REVIEW_REQUESTED = '@reminds_me/review_requested/v1';
 
 const MAX_LOG_ENTRIES = 500;
 
@@ -230,6 +231,26 @@ export async function setSlidesSeen(): Promise<void> {
 }
 
 // ============================================================
+// App Store review prompt (shown once, on the first answer)
+// ============================================================
+
+export async function getReviewRequested(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(KEY_REVIEW_REQUESTED)) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export async function setReviewRequested(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(KEY_REVIEW_REQUESTED, 'true');
+  } catch (e) {
+    console.warn('[storage] setReviewRequested failed', e);
+  }
+}
+
+// ============================================================
 // Notification logs (capped)
 // ============================================================
 
@@ -265,6 +286,7 @@ export async function clearAllData(): Promise<void> {
     KEY_SUPPLEMENT,
     KEY_PENDING_SHOWS,
     KEY_SLIDES_SEEN,
+    KEY_REVIEW_REQUESTED,
   ]);
 }
 

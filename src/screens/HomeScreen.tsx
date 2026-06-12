@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AppState,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -12,7 +11,6 @@ import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { ProgressBar } from '../components/ProgressBar';
 import { COLORS, FONT_SIZE, RADIUS, SPACING, SHADOW } from '../constants/colors';
@@ -69,11 +67,7 @@ function formatRemaining(ms: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
 }
 
-interface Props {
-  onOpenSettings: () => void;
-}
-
-export function HomeScreen({ onOpenSettings }: Props) {
+export function HomeScreen() {
   const ctx = useApp();
   const profile = ctx?.profile;
   const rescheduleNotifications = ctx?.rescheduleNotifications;
@@ -194,9 +188,6 @@ export function HomeScreen({ onOpenSettings }: Props) {
           <Text style={styles.brand}>
             ながら単語<Text style={styles.brandSmall}> for TOEIC</Text>
           </Text>
-          <Pressable onPress={onOpenSettings} hitSlop={10} style={styles.settingsBtn}>
-            <Text style={styles.settingsIcon}>⚙︎</Text>
-          </Pressable>
         </View>
 
         {/* Course hero card */}
@@ -247,9 +238,6 @@ export function HomeScreen({ onOpenSettings }: Props) {
           <Text style={styles.intervalLabel}>通知間隔</Text>
           <Text style={styles.intervalValue}>{intervalMin} 分ごと</Text>
         </Card>
-
-        <View style={{ height: SPACING.lg }} />
-        <Button title="設定" variant="outline" onPress={onOpenSettings} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -294,16 +282,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.sm,
     fontWeight: '700',
   },
-  settingsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOW,
-  },
-  settingsIcon: { fontSize: FONT_SIZE.lg, color: COLORS.text },
   hero: {
     borderRadius: RADIUS.card,
     padding: SPACING.lg,

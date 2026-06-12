@@ -1,7 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useApp } from '../context/AppContext';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -12,18 +11,13 @@ import { AnswerScreen } from '../screens/AnswerScreen';
 import { OnboardingFlow } from '../screens/Onboarding/OnboardingFlow';
 import { COLORS, FONT_SIZE } from '../constants/colors';
 
-type RootStackParamList = {
-  Main: undefined;
-  Settings: undefined;
-};
-
 type TabParamList = {
   Home: undefined;
   Review: undefined;
   Achievements: undefined;
+  Settings: undefined;
 };
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
 function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
@@ -48,15 +42,12 @@ function MainTabs() {
     >
       <Tab.Screen
         name="Home"
+        component={HomeScreen}
         options={{
           tabBarLabel: 'ホーム',
           tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} />,
         }}
-      >
-        {({ navigation }) => (
-          <HomeScreen onOpenSettings={() => navigation.navigate('Settings')} />
-        )}
-      </Tab.Screen>
+      />
       <Tab.Screen
         name="Review"
         component={ReviewScreen}
@@ -71,6 +62,14 @@ function MainTabs() {
         options={{
           tabBarLabel: '実績',
           tabBarIcon: ({ focused }) => <TabIcon icon="📊" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          tabBarLabel: '設定',
+          tabBarIcon: ({ focused }) => <TabIcon icon="⚙️" focused={focused} />,
         }}
       />
     </Tab.Navigator>
@@ -95,14 +94,7 @@ export function RootNavigator() {
   return (
     <>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="Settings">
-            {({ navigation }) => (
-              <SettingsScreen onClose={() => navigation.goBack()} />
-            )}
-          </Stack.Screen>
-        </Stack.Navigator>
+        <MainTabs />
       </NavigationContainer>
       {answerWordId && (
         <AnswerScreen wordId={answerWordId} onDone={dismissAnswer} />

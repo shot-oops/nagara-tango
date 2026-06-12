@@ -9,6 +9,7 @@ import { Screen } from '../components/Screen';
 import { Button } from '../components/Button';
 import { COLORS, FONT_SIZE, RADIUS, SPACING } from '../constants/colors';
 import { answerWord } from '../lib/responseHandler';
+import { maybePromptReviewOnFirstAnswer } from '../lib/review';
 import { getAllWords } from '../lib/wordRepository';
 import type { MasterWord, WordStatus } from '../types';
 
@@ -57,6 +58,8 @@ export function AnswerScreen({ wordId, onDone }: Props) {
       const status = await answerWord(wordId, isKnown).catch(() => null);
       setResultStatus(status);
       setPhase('answered');
+      // First answer after opening a test notification → ask for a review.
+      maybePromptReviewOnFirstAnswer().catch(() => {});
     },
     [wordId]
   );

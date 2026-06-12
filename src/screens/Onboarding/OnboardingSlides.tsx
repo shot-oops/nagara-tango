@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import {
   Dimensions,
+  Image,
+  ImageSourcePropType,
   NativeScrollEvent,
   NativeSyntheticEvent,
   ScrollView,
@@ -23,6 +25,16 @@ interface Slide {
   Icon: React.ComponentType<{ size?: number }>;
   heading: string;
   body: string;
+  image?: ImageSourcePropType;
+}
+
+// Resolve the optional illustration defensively: if the asset is missing the
+// require would otherwise break, so fall back to undefined and skip rendering.
+let notificationImage: ImageSourcePropType | undefined;
+try {
+  notificationImage = require('../../assets/images/onboarding_notification.jpg');
+} catch {
+  notificationImage = undefined;
 }
 
 const SLIDES: Slide[] = [
@@ -40,6 +52,7 @@ const SLIDES: Slide[] = [
     Icon: PhoneKun,
     heading: 'ワンタップで記録',
     body: '英単語のみの通知はテストモード\nタップまたは長押しで回答できます',
+    image: notificationImage,
   },
   {
     Icon: RocketKun,
@@ -86,6 +99,13 @@ export function OnboardingSlides({ onDone }: { onDone: () => void }) {
                 <View style={styles.iconWrap}>
                   <Icon size={150} />
                 </View>
+                {s.image && (
+                  <Image
+                    source={s.image}
+                    style={styles.slideImage}
+                    resizeMode="contain"
+                  />
+                )}
                 <Text style={styles.heading}>{s.heading}</Text>
                 <Text style={styles.body}>{s.body}</Text>
               </View>
@@ -123,6 +143,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.lg,
+  },
+  slideImage: {
+    width: 280,
+    height: 160,
+    borderRadius: 12,
+    marginBottom: 16,
   },
   heading: {
     fontSize: FONT_SIZE.xxl,
