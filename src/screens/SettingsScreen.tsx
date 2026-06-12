@@ -31,7 +31,11 @@ const FREE_MAX_DAILY = 10; // free: 5〜10語（11語以上は有料）
 
 const TERMS_URL = 'https://shot-oops.github.io/nagara-tango/terms.md';
 const PRIVACY_URL = 'https://shot-oops.github.io/nagara-tango/privacy.md';
-const FEEDBACK_MAILTO = 'mailto:sho.takahashi87@gmail.com';
+const FEEDBACK_EMAIL = 'sho.takahashi87@gmail.com';
+const FEEDBACK_SUBJECT = '[ながら単語 for TOEIC]ご意見・ご要望';
+const FEEDBACK_MAILTO = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(
+  FEEDBACK_SUBJECT
+)}`;
 
 function openUrl(url: string) {
   Linking.openURL(url).catch((e) => console.warn('[settings] openURL failed', e));
@@ -243,7 +247,7 @@ export function SettingsScreen() {
         <LinkRow label="利用規約" onPress={() => openUrl(TERMS_URL)} />
         <LinkRow label="プライバシーポリシー" onPress={() => openUrl(PRIVACY_URL)} />
         <LinkRow label="レビューする" onPress={onReview} />
-        <LinkRow label="意見を送る" onPress={() => openUrl(FEEDBACK_MAILTO)} />
+        <LinkRow label="ご意見・ご要望を送る" onPress={() => openUrl(FEEDBACK_MAILTO)} />
 
         {__DEV__ && (
           <View style={styles.debugCard}>

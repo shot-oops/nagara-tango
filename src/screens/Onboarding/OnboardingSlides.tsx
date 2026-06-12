@@ -28,14 +28,7 @@ interface Slide {
   image?: ImageSourcePropType;
 }
 
-// Resolve the optional illustration defensively: if the asset is missing the
-// require would otherwise break, so fall back to undefined and skip rendering.
-let notificationImage: ImageSourcePropType | undefined;
-try {
-  notificationImage = require('../../assets/images/onboarding_notification.jpg');
-} catch {
-  notificationImage = undefined;
-}
+const notificationImage: ImageSourcePropType = require('../../../assets/images/onboarding_notification.jpg');
 
 const SLIDES: Slide[] = [
   {
