@@ -13,7 +13,7 @@ import { COLORS, FONT_SIZE, RADIUS, SPACING } from '../constants/colors';
 import { getUserWordsMap } from '../lib/storage';
 import { getAllWords } from '../lib/wordRepository';
 import { answerWord } from '../lib/responseHandler';
-import type { Difficulty, MasterWord, UserWord, WordStatus } from '../types';
+import type { Difficulty, MasterWord, UserWord } from '../types';
 
 type Filter = 'all' | 'due' | 'learning' | 'mastered';
 
@@ -36,15 +36,22 @@ const DIFF_BADGE: Record<Difficulty, string> = {
   5: '990点',
 };
 
-const STATUS_LABEL: Record<WordStatus, string> = {
-  new: '未学習',
-  learning: '学習中',
-  known: '習得済み',
-  mastered: '習得済み',
-};
-
 const isDue = (uw: UserWord, now: number) =>
   new Date(uw.next_display_at).getTime() <= now;
+
+/**
+ * A word counts as "要復習" (needs review now) only when its scheduled review
+ * time has arrived AND it has actually entered the review rotation:
+ *   - 学習中の単語: only once it has been shown at least once
+ *     (`last_displayed_at` set). Freshly-supplemented words that have never
+ *     fired a notification stay "学習中" — they don't inflate 要復習.
+ *   - 習得済みの単語: counted when it's due again (the spaced re-review).
+ */
+const needsReview = (uw: UserWord, now: number): boolean => {
+  if (!isDue(uw, now)) return false;
+  if (uw.status === 'mastered') return true;
+  return uw.last_displayed_at != null;
+};
 
 export function ReviewScreen() {
   const [items, setItems] = useState<Item[]>([]);
@@ -84,20 +91,20 @@ export function ReviewScreen() {
     for (const it of items) {
       if (it.uw.status === 'mastered') mastered += 1;
       else if (it.uw.status === 'learning' || it.uw.status === 'new') learning += 1;
-      if (it.uw.status !== 'mastered' && isDue(it.uw, now)) due += 1;
+      if (needsReview(it.uw, now)) due += 1;
     }
     return { learning, due, mastered };
   }, [items, now]);
 
   const visible = useMemo(() => {
     const rank = (it: Item) => {
-      if (it.uw.status === 'mastered') return 2;
-      if (isDue(it.uw, now)) return 0;
-      return 1;
+      if (needsReview(it.uw, now)) return 0; // 要復習 → top
+      if (it.uw.status === 'mastered') return 2; // mastered (not yet due) → bottom
+      return 1; // 学習中（未通知・未due）→ middle
     };
     const filtered = items.filter((it) => {
       if (filter === 'all') return true;
-      if (filter === 'due') return it.uw.status !== 'mastered' && isDue(it.uw, now);
+      if (filter === 'due') return needsReview(it.uw, now);
       if (filter === 'learning')
         return it.uw.status === 'learning' || it.uw.status === 'new';
       return it.uw.status === 'mastered';
@@ -130,9 +137,13 @@ export function ReviewScreen() {
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{DIFF_BADGE[item.word.difficulty_level]}</Text>
         </View>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>{STATUS_LABEL[item.uw.status]}</Text>
-        </View>
+        {needsReview(item.uw, now) ? (
+          <Text style={styles.reviewText}>要復習</Text>
+        ) : (
+          <Text style={styles.statusText}>
+            {item.uw.status === 'mastered' ? '習得済み' : '学習中'}
+          </Text>
+        )}
       </View>
 
       <View style={styles.cardBottom}>
@@ -245,8 +256,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   badgeText: { color: COLORS.primary, fontSize: FONT_SIZE.xs, fontWeight: '800' },
-  statusBadge: {},
-  statusText: { color: COLORS.textMuted, fontSize: FONT_SIZE.xs, fontWeight: '700' },
+  statusText: { color: COLORS.text, fontSize: FONT_SIZE.xs, fontWeight: '700' },
+  reviewText: { color: COLORS.danger, fontSize: FONT_SIZE.xs, fontWeight: '800' },
   cardBottom: {
     flexDirection: 'row',
     alignItems: 'center',

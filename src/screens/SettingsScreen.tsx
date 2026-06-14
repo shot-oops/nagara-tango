@@ -29,8 +29,8 @@ const MIN_DAILY = 5;
 const MAX_DAILY = 30;
 const FREE_MAX_DAILY = 10; // free: 5〜10語（11語以上は有料）
 
-const TERMS_URL = 'https://shot-oops.github.io/nagara-tango/terms.md';
-const PRIVACY_URL = 'https://shot-oops.github.io/nagara-tango/privacy.md';
+const TERMS_URL = 'https://shot-oops.github.io/nagara-tango/terms/';
+const PRIVACY_URL = 'https://shot-oops.github.io/nagara-tango/privacy/';
 const FEEDBACK_EMAIL = 'sho.takahashi87@gmail.com';
 const FEEDBACK_SUBJECT = '[ながら単語 for TOEIC]ご意見・ご要望';
 const FEEDBACK_MAILTO = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(
