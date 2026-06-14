@@ -11,8 +11,8 @@ import Purchases, {
 export const ENTITLEMENT_ID = 'ながら単語 for TOEIC Premium';
 
 /** Placeholder product IDs (register the real ones in App Store Connect). */
-export const PRODUCT_MONTHLY = 'nagaratango_monthly_490';
-export const PRODUCT_YEARLY = 'nagaratango_yearly_3900';
+export const PRODUCT_MONTHLY = 'nagaratango_premium_monthly';
+export const PRODUCT_YEARLY = 'nagaratango_premium_yearly';
 
 const DEV_PREMIUM_KEY = '@nagaratango/dev_premium';
 
@@ -90,32 +90,63 @@ export async function isPremium(): Promise<boolean> {
   }
 }
 
-async function getPackage(kind: 'monthly' | 'annual'): Promise<PurchasesPackage | null> {
-  if (!configured) return null;
+/**
+ * Resolve the monthly / annual package from RevenueCat's current offering.
+ * Throws a *descriptive* error pinpointing which part of the RevenueCat / App
+ * Store Connect setup is missing, so "取得できませんでした" is never a dead end.
+ */
+async function resolvePackage(
+  kind: 'monthly' | 'annual'
+): Promise<PurchasesPackage> {
+  if (!configured) throw new Error('not initialized');
+
+  let offerings: Awaited<ReturnType<typeof Purchases.getOfferings>>;
   try {
-    const offerings = await Purchases.getOfferings();
-    const current = offerings.current;
-    if (!current) return null;
-    return (kind === 'monthly' ? current.monthly : current.annual) ?? null;
-  } catch {
-    return null;
+    offerings = await Purchases.getOfferings();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn('[purchases] getOfferings failed', e);
+    throw new Error(`オファリングの取得に失敗しました：${msg}`);
   }
+
+  console.info('[purchases] offerings', {
+    current: offerings.current?.identifier ?? null,
+    all: Object.keys(offerings.all ?? {}),
+    packages: offerings.current?.availablePackages?.map((p) => p.identifier) ?? [],
+  });
+
+  const current = offerings.current;
+  if (!current) {
+    const ids = Object.keys(offerings.all ?? {});
+    throw new Error(
+      ids.length === 0
+        ? '商品(オファリング)が見つかりません。App Store Connectの自動更新サブスクと、RevenueCatのOffering／商品の紐付けを確認してください。'
+        : `「現在(Current)」のオファリングが未設定です（定義済み: ${ids.join(', ')}）。RevenueCatでCurrentに指定してください。`
+    );
+  }
+
+  const pkg = kind === 'monthly' ? current.monthly : current.annual;
+  if (!pkg) {
+    const available = current.availablePackages?.map((p) => p.identifier) ?? [];
+    throw new Error(
+      `オファリング「${current.identifier}」に${kind === 'monthly' ? '月額' : '年額'}パッケージがありません` +
+        `（利用可能: ${available.join(', ') || 'なし'}）。` +
+        'App Store Connectの商品が「提出準備完了」かつ有料App契約が有効か確認してください。'
+    );
+  }
+  return pkg;
 }
 
 /** Purchase the monthly package. Returns true if premium is now active.
  * Throws on failure; a user-cancelled error carries `userCancelled: true`. */
 export async function purchaseMonthly(): Promise<boolean> {
-  if (!configured) throw new Error('not initialized');
-  const pkg = await getPackage('monthly');
-  if (!pkg) throw new Error('月額プランを取得できませんでした。');
+  const pkg = await resolvePackage('monthly');
   const { customerInfo } = await Purchases.purchasePackage(pkg);
   return entitlementActive(customerInfo);
 }
 
 export async function purchaseYearly(): Promise<boolean> {
-  if (!configured) throw new Error('not initialized');
-  const pkg = await getPackage('annual');
-  if (!pkg) throw new Error('年額プランを取得できませんでした。');
+  const pkg = await resolvePackage('annual');
   const { customerInfo } = await Purchases.purchasePackage(pkg);
   return entitlementActive(customerInfo);
 }

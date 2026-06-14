@@ -3,7 +3,6 @@ import { ACTION_DONT_KNOW, ACTION_KNOW } from './notifications';
 import { applyCorrect, applyIncorrect } from './sm2';
 import { appendLog, getProfile, getUserWord, setUserWord } from './storage';
 import { scheduleNextNotifications } from './scheduler';
-import { supplementReplacements } from './wordSupplier';
 import type { NotificationType, UserWord, WordStatus } from '../types';
 
 interface NotificationData {
@@ -91,11 +90,10 @@ export async function answerWord(
     result: known ? 'correct' : 'incorrect',
     notified_at: new Date().toISOString(),
   });
-  // A correct answer pushes this word's next review far out, so it leaves the
-  // active notification queue. Backfill one new word to keep the drip going.
-  if (known) {
-    await supplementReplacements(1).catch(() => {});
-  }
+  // New words are introduced solely by the scheduler's daily top-up
+  // (supplementNewWords), which is capped at Profile.daily_new_words per day.
+  // We intentionally do NOT backfill on a correct answer — doing so bypassed
+  // the daily quota and let the active pool grow without bound.
   await scheduleNextNotifications();
   return updated.status;
 }

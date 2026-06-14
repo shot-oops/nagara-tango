@@ -102,13 +102,3 @@ export async function supplementNewWords(
   if (added > 0) await recordSupplemented(added);
   return added;
 }
-
-/**
- * Replacement supplement (NOT counted against the daily quota): when a word is
- * answered correctly its next review is pushed far out, so it stops appearing
- * in notifications. Call this with the number of such words to backfill the
- * active pool and keep the notification drip going.
- */
-export async function supplementReplacements(count: number): Promise<number> {
-  return addNewWords(count);
-}
