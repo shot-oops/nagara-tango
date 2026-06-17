@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -48,15 +47,10 @@ export function Step3Settings({ onDone }: Props) {
 
   const onSave = async () => {
     setSaving(true);
-    const granted = await ensureNotificationPermission().catch(() => false);
-    if (!granted) {
-      setSaving(false);
-      Alert.alert(
-        '通知が許可されていません',
-        '通知を許可しないと学習通知が届きません。設定アプリから許可してください。'
-      );
-      return;
-    }
+    // Notifications are OPTIONAL. Request consent best-effort, but always
+    // complete onboarding so the app is fully usable without notifications
+    // (learning still works from the 復習 tab). Required for App Store 4.5.4.
+    await ensureNotificationPermission().catch(() => false);
     if (updateProfile) {
       await updateProfile({
         notification_interval_min: dispInterval,

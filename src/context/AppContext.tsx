@@ -12,7 +12,9 @@ import {
   DEFAULT_PROFILE,
   clearAllData,
   getProfile,
+  getReviewRequested,
   saveProfile,
+  setReviewRequested,
 } from '../lib/storage';
 import { scheduleNextNotifications } from '../lib/scheduler';
 import {
@@ -27,7 +29,7 @@ import {
 import { initPurchases, isPremium } from '../services/purchases';
 import { getSupabase } from '../lib/supabase';
 import { getAllWords } from '../lib/wordRepository';
-import type { Plan, Profile } from '../types';
+import type { Plan, Profile, WordStatus } from '../types';
 
 interface AppContextValue {
   profile: Profile;
@@ -40,6 +42,12 @@ interface AppContextValue {
   rescheduleNotifications: () => Promise<void>;
   resetAll: () => Promise<void>;
   refreshPlan: () => Promise<Plan>;
+  /** True while the one-time "first word mastered" celebration is showing. */
+  firstMasteryCelebration: boolean;
+  /** Called after answering a word: if it just became the user's first
+   * mastered word, queue the celebration (and the review dialog after it). */
+  maybeCelebrateFirstMastery: (status: WordStatus | null) => Promise<void>;
+  closeFirstMasteryCelebration: () => void;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -48,6 +56,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [loading, setLoading] = useState(true);
   const [answerWordId, setAnswerWordId] = useState<string | null>(null);
+  const [firstMasteryCelebration, setFirstMasteryCelebration] = useState(false);
   const responseSubRef = useRef<Notifications.Subscription | null>(null);
 
   // First-load: register categories, init RevenueCat, restore profile.
@@ -195,6 +204,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAnswerWordId(null);
   }, []);
 
+  // First time a word reaches 'mastered', show a one-time celebration. The
+  // review_requested flag (set here) guarantees it only ever fires once.
+  const maybeCelebrateFirstMastery = useCallback(
+    async (status: WordStatus | null) => {
+      if (status !== 'mastered') return;
+      if (await getReviewRequested()) return;
+      await setReviewRequested();
+      setFirstMasteryCelebration(true);
+    },
+    []
+  );
+
+  const closeFirstMasteryCelebration = useCallback(() => {
+    setFirstMasteryCelebration(false);
+  }, []);
+
   const resetAll = useCallback(async () => {
     // Cancel every pending notification (incl. the repeating safety nets)
     // before wiping storage, so stale reminders don't keep firing post-reset.
@@ -217,6 +242,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       rescheduleNotifications,
       resetAll,
       refreshPlan,
+      firstMasteryCelebration,
+      maybeCelebrateFirstMastery,
+      closeFirstMasteryCelebration,
     }),
     [
       profile,
@@ -228,6 +256,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       rescheduleNotifications,
       resetAll,
       refreshPlan,
+      firstMasteryCelebration,
+      maybeCelebrateFirstMastery,
+      closeFirstMasteryCelebration,
     ]
   );
 

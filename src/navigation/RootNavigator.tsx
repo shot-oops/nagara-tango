@@ -9,6 +9,8 @@ import { AchievementsScreen } from '../screens/AchievementsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { AnswerScreen } from '../screens/AnswerScreen';
 import { OnboardingFlow } from '../screens/Onboarding/OnboardingFlow';
+import { FirstMasteryCelebration } from '../components/FirstMasteryCelebration';
+import { requestReviewManually } from '../lib/review';
 import { COLORS, FONT_SIZE } from '../constants/colors';
 
 type TabParamList = {
@@ -77,7 +79,14 @@ function MainTabs() {
 }
 
 export function RootNavigator() {
-  const { profile, loading, answerWordId, dismissAnswer } = useApp();
+  const {
+    profile,
+    loading,
+    answerWordId,
+    dismissAnswer,
+    firstMasteryCelebration,
+    closeFirstMasteryCelebration,
+  } = useApp();
 
   if (loading) {
     return (
@@ -99,6 +108,14 @@ export function RootNavigator() {
       {answerWordId && (
         <AnswerScreen wordId={answerWordId} onDone={dismissAnswer} />
       )}
+      <FirstMasteryCelebration
+        visible={firstMasteryCelebration}
+        onContinue={() => {
+          // Close the celebration, then show the App Store review dialog.
+          closeFirstMasteryCelebration();
+          requestReviewManually().catch(() => {});
+        }}
+      />
     </>
   );
 }

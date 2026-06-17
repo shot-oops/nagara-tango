@@ -9,8 +9,8 @@ import { Screen } from '../components/Screen';
 import { Button } from '../components/Button';
 import { COLORS, FONT_SIZE, RADIUS, SPACING } from '../constants/colors';
 import { answerWord } from '../lib/responseHandler';
-import { maybePromptReviewOnFirstAnswer } from '../lib/review';
 import { getAllWords } from '../lib/wordRepository';
+import { useApp } from '../context/AppContext';
 import type { MasterWord, WordStatus } from '../types';
 
 interface Props {
@@ -27,6 +27,7 @@ type Phase = 'ask' | 'submitting' | 'answered';
  * meaning as feedback.
  */
 export function AnswerScreen({ wordId, onDone }: Props) {
+  const { maybeCelebrateFirstMastery } = useApp();
   const [word, setWord] = useState<MasterWord | null>(null);
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>('ask');
@@ -58,10 +59,10 @@ export function AnswerScreen({ wordId, onDone }: Props) {
       const status = await answerWord(wordId, isKnown).catch(() => null);
       setResultStatus(status);
       setPhase('answered');
-      // First answer after opening a test notification → ask for a review.
-      maybePromptReviewOnFirstAnswer().catch(() => {});
+      // First word to reach 'mastered' → one-time celebration + review prompt.
+      void maybeCelebrateFirstMastery(status);
     },
-    [wordId]
+    [wordId, maybeCelebrateFirstMastery]
   );
 
   return (

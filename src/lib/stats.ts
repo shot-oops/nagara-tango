@@ -16,16 +16,22 @@ export interface MasteryStats {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function buildSeries(masteredDates: Date[], rangeDays: number) {
-  const now = new Date();
+  const nowMs = Date.now();
   const POINTS = 7;
-  const stepDays = Math.max(1, Math.round(rangeDays / (POINTS - 1)));
+  const windowStartMs = nowMs - rangeDays * DAY_MS;
+  // Anchor the left edge to the first achievement when it falls inside the
+  // window, so a brand-new user's first mastered word renders as 1 right away
+  // instead of a run of leading zeros before they ever started. (masteredDates
+  // is sorted ascending, so [0] is the earliest mastery.)
+  const firstMs = masteredDates.length ? masteredDates[0].getTime() : windowStartMs;
+  const startMs = Math.min(nowMs, Math.max(windowStartMs, firstMs));
+  const span = Math.max(0, nowMs - startMs);
   const labels: string[] = [];
   const data: number[] = [];
-  for (let i = POINTS - 1; i >= 0; i -= 1) {
-    const day = new Date(now);
-    day.setDate(now.getDate() - i * stepDays);
-    day.setHours(23, 59, 59, 999);
-    const cum = masteredDates.filter((d) => d.getTime() <= day.getTime()).length;
+  for (let i = 0; i < POINTS; i += 1) {
+    const t = POINTS > 1 ? startMs + (span * i) / (POINTS - 1) : nowMs;
+    const day = new Date(t);
+    const cum = masteredDates.filter((d) => d.getTime() <= t).length;
     labels.push(`${day.getMonth() + 1}/${day.getDate()}`);
     data.push(cum);
   }

@@ -13,6 +13,7 @@ import { COLORS, FONT_SIZE, RADIUS, SPACING } from '../constants/colors';
 import { getUserWordsMap } from '../lib/storage';
 import { getAllWords } from '../lib/wordRepository';
 import { answerWord } from '../lib/responseHandler';
+import { useApp } from '../context/AppContext';
 import type { Difficulty, MasterWord, UserWord } from '../types';
 
 type Filter = 'all' | 'due' | 'learning' | 'mastered';
@@ -54,6 +55,7 @@ const needsReview = (uw: UserWord, now: number): boolean => {
 };
 
 export function ReviewScreen() {
+  const { maybeCelebrateFirstMastery } = useApp();
   const [items, setItems] = useState<Item[]>([]);
   const [pool, setPool] = useState<MasterWord[]>([]);
   const [filter, setFilter] = useState<Filter>('due');
@@ -126,9 +128,9 @@ export function ReviewScreen() {
   );
 
   const onAnswered = (wordId: string, correct: boolean) => {
-    answerWord(wordId, correct).catch((e) =>
-      console.warn('[review] answerWord failed', e)
-    );
+    answerWord(wordId, correct)
+      .then((status) => maybeCelebrateFirstMastery(status))
+      .catch((e) => console.warn('[review] answerWord failed', e));
   };
 
   const renderItem = ({ item }: { item: Item }) => (

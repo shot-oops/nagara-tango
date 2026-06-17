@@ -1,6 +1,5 @@
-import { Alert, Linking } from 'react-native';
+import { Linking } from 'react-native';
 import * as StoreReview from 'expo-store-review';
-import { getReviewRequested, setReviewRequested } from './storage';
 
 /**
  * App Store page for the manual "レビューする" button when the native in-app
@@ -26,40 +25,9 @@ async function requestReviewSafe(): Promise<void> {
 }
 
 /**
- * Prompt the user to leave an App Store review the very first time they answer
- * a word. Shows at most once (guarded by the persisted `review_requested` flag)
- * and only when the native review API is available. Tapping either button marks
- * the flag so the dialog never appears again.
- */
-export async function maybePromptReviewOnFirstAnswer(): Promise<void> {
-  if (await getReviewRequested()) return;
-  if (!(await isReviewAvailable())) return;
-
-  Alert.alert(
-    'ながら単語、使えてますか？',
-    'よろしければ、App Storeでレビューをお願いします。開発の励みになります！',
-    [
-      {
-        text: 'あとで',
-        style: 'cancel',
-        onPress: () => {
-          void setReviewRequested();
-        },
-      },
-      {
-        text: 'レビューする',
-        onPress: () => {
-          void setReviewRequested();
-          void requestReviewSafe();
-        },
-      },
-    ]
-  );
-}
-
-/**
- * Manual review entry point (Settings → レビューする). Uses the native in-app
- * review prompt when available, otherwise opens the App Store page directly.
+ * Show the App Store review dialog. Used after the first-mastery celebration and
+ * from the Settings → レビューする button. Uses the native in-app review prompt
+ * when available, otherwise opens the App Store page directly.
  */
 export async function requestReviewManually(): Promise<void> {
   if (await isReviewAvailable()) {

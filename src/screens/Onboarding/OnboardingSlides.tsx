@@ -20,15 +20,19 @@ import {
   RocketKun,
 } from '../../components/characters';
 import { COLORS, FONT_SIZE, SPACING } from '../../constants/colors';
+import { ensureNotificationPermission } from '../../lib/notifications';
 
 interface Slide {
   Icon: React.ComponentType<{ size?: number }>;
   heading: string;
   body: string;
+  /** Optional small sub-note under the heading (e.g. opt-out reassurance). */
+  note?: string;
   image?: ImageSourcePropType;
 }
 
 const notificationImage: ImageSourcePropType = require('../../../assets/images/onboarding_notification.jpg');
+const startImage: ImageSourcePropType = require('../../../assets/images/onboarding2.jpg');
 
 const SLIDES: Slide[] = [
   {
@@ -49,8 +53,10 @@ const SLIDES: Slide[] = [
   },
   {
     Icon: RocketKun,
-    heading: '始めましょう',
-    body: 'まずは通知設定から',
+    heading: '通知をオンに!',
+    body: '',
+    note: '※通知なしでも復習画面から学べます',
+    image: startImage,
   },
 ];
 
@@ -67,8 +73,11 @@ export function OnboardingSlides({ onDone }: { onDone: () => void }) {
 
   const isLast = page === SLIDES.length - 1;
 
-  const next = () => {
+  const next = async () => {
     if (isLast) {
+      // Ask for notification consent on the final slide. Notifications are
+      // OPTIONAL — proceed into the app whether the user grants or denies.
+      await ensureNotificationPermission().catch(() => false);
       onDone();
       return;
     }
@@ -100,7 +109,8 @@ export function OnboardingSlides({ onDone }: { onDone: () => void }) {
                   />
                 )}
                 <Text style={styles.heading}>{s.heading}</Text>
-                <Text style={styles.body}>{s.body}</Text>
+                {!!s.note && <Text style={styles.note}>{s.note}</Text>}
+                {!!s.body && <Text style={styles.body}>{s.body}</Text>}
               </View>
             );
           })}
@@ -155,6 +165,11 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  note: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textMuted,
+    textAlign: 'center',
   },
   dots: {
     flexDirection: 'row',
